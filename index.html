@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RestaurantOS — Sistema de Pedidos</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════
+       TELA DE LOGIN
+  ══════════════════════════════════════ -->
+  <section id="screen-login" class="screen active">
+    <div class="login-bg">
+      <div class="login-orb orb1"></div>
+      <div class="login-orb orb2"></div>
+      <div class="login-orb orb3"></div>
+      <div class="noise-overlay"></div>
+    </div>
+
+    <div class="login-card">
+      <div class="login-logo">
+        <span class="logo-icon">🍽</span>
+        <h1 class="logo-text">Restaurant<span>OS</span></h1>
+        <p class="logo-sub">Sistema Inteligente de Pedidos</p>
+      </div>
+
+      <div class="login-form">
+        <div class="profile-selector">
+          <button class="profile-btn active" data-role="garcom" onclick="selectRole('garcom', this)">
+            <span class="profile-icon">🛎</span>
+            <span class="profile-label">Garçom</span>
+          </button>
+          <button class="profile-btn" data-role="cozinheiro" onclick="selectRole('cozinheiro', this)">
+            <span class="profile-icon">👨‍🍳</span>
+            <span class="profile-label">Cozinheiro</span>
+          </button>
+        </div>
+
+        <div class="input-group">
+          <label>Usuário</label>
+          <input type="text" id="login-user" placeholder="Digite seu nome…" autocomplete="off" />
+        </div>
+
+        <div class="input-group">
+          <label>Senha</label>
+          <input type="password" id="login-pass" placeholder="••••••••" />
+          <span class="password-hint" id="pass-hint">Dica: <strong>1234</strong></span>
+        </div>
+
+        <button class="btn-login" onclick="doLogin()">
+          <span>Entrar</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+
+        <p class="login-error" id="login-error"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       TELA DO GARÇOM — FAZER PEDIDO
+  ══════════════════════════════════════ -->
+  <section id="screen-garcom" class="screen">
+
+    <!-- Header -->
+    <header class="garcom-header">
+      <div class="header-left">
+        <span class="logo-sm">🍽 RestaurantOS</span>
+        <span class="header-badge garcom-badge">🛎 Garçom</span>
+      </div>
+      <div class="header-center">
+        <h2 id="garcom-welcome">Olá, Garçom!</h2>
+      </div>
+      <div class="header-right">
+        <div class="order-counter">
+          <span id="order-count-badge">0</span> pedidos hoje
+        </div>
+        <button class="btn-logout" onclick="doLogout()">Sair</button>
+      </div>
+    </header>
+
+    <div class="garcom-layout">
+
+      <!-- Painel Esquerdo: Seleção de Mesa + Cardápio -->
+      <aside class="garcom-sidebar">
+
+        <div class="section-card">
+          <h3 class="section-title">
+            <span>🪑</span> Mesa
+          </h3>
+          <div class="mesa-grid" id="mesa-grid">
+            <!-- gerado pelo JS -->
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h3 class="section-title">
+            <span>📋</span> Cardápio
+          </h3>
+          <div class="category-tabs" id="category-tabs">
+            <!-- gerado pelo JS -->
+          </div>
+          <div class="menu-list" id="menu-list">
+            <!-- gerado pelo JS -->
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- Painel Direito: Comanda -->
+      <main class="garcom-main">
+        <div class="comanda-card">
+          <div class="comanda-header">
+            <h3>🧾 Comanda</h3>
+            <span class="mesa-tag" id="comanda-mesa-tag">Nenhuma mesa</span>
+          </div>
+
+          <div class="comanda-items" id="comanda-items">
+            <div class="comanda-empty">
+              <span>🍴</span>
+              <p>Selecione uma mesa e<br/>adicione itens ao pedido</p>
+            </div>
+          </div>
+
+          <div class="comanda-footer" id="comanda-footer" style="display:none">
+            <div class="comanda-subtotais">
+              <div class="subtotal-row">
+                <span>Subtotal</span>
+                <span id="subtotal-val">R$ 0,00</span>
+              </div>
+              <div class="subtotal-row taxa">
+                <span>Taxa de serviço (10%)</span>
+                <span id="taxa-val">R$ 0,00</span>
+              </div>
+              <div class="subtotal-row total">
+                <span>Total</span>
+                <span id="total-val">R$ 0,00</span>
+              </div>
+            </div>
+
+            <div class="obs-group">
+              <label>Observações</label>
+              <textarea id="obs-pedido" placeholder="Sem cebola, bem passado…"></textarea>
+            </div>
+
+            <button class="btn-fechar-pedido" id="btn-fechar" onclick="fecharPedido()">
+              <span>✅ Fechar Pedido &amp; Enviar à Cozinha</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Histórico de pedidos do garçom -->
+        <div class="historico-card">
+          <h3>📜 Pedidos Enviados</h3>
+          <div id="historico-list">
+            <p class="empty-hist">Nenhum pedido enviado ainda.</p>
+          </div>
+        </div>
+      </main>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       TELA DOS COZINHEIROS — PAINEL
+  ══════════════════════════════════════ -->
+  <section id="screen-cozinha" class="screen">
+
+    <!-- Fundo especial da cozinha -->
+    <div class="cozinha-bg">
+      <div class="cozinha-flame f1"></div>
+      <div class="cozinha-flame f2"></div>
+      <div class="cozinha-flame f3"></div>
+    </div>
+
+    <header class="cozinha-header">
+      <div class="header-left">
+        <span class="logo-sm coz-logo">🍽 RestaurantOS</span>
+        <span class="header-badge coz-badge">👨‍🍳 Cozinha</span>
+      </div>
+      <div class="header-center">
+        <h2 id="coz-welcome">Cozinha — Pedidos ao Vivo</h2>
+        <div class="live-dot"><span></span> AO VIVO</div>
+      </div>
+      <div class="header-right">
+        <div class="notif-counter">
+          <span id="notif-count">0</span>
+          <span>pedidos</span>
+        </div>
+        <button class="btn-logout coz-logout" onclick="doLogout()">Sair</button>
+      </div>
+    </header>
+
+    <div class="cozinha-layout">
+
+      <!-- Stats rápidas -->
+      <div class="cozinha-stats">
+        <div class="stat-card">
+          <span class="stat-num" id="stat-pendentes">0</span>
+          <span class="stat-label">Pendentes</span>
+          <div class="stat-bar pending-bar"></div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" id="stat-preparando">0</span>
+          <span class="stat-label">Preparando</span>
+          <div class="stat-bar prep-bar"></div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" id="stat-prontos">0</span>
+          <span class="stat-label">Prontos</span>
+          <div class="stat-bar ready-bar"></div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" id="stat-total-coz">0</span>
+          <span class="stat-label">Total hoje</span>
+          <div class="stat-bar total-bar"></div>
+        </div>
+      </div>
+
+      <!-- Painel Kanban de pedidos -->
+      <div class="kanban-board">
+
+        <div class="kanban-col" id="col-pendentes">
+          <div class="kanban-col-header pending-header">
+            <span>🔴</span> Pendentes
+            <span class="col-count" id="cnt-pendentes">0</span>
+          </div>
+          <div class="kanban-cards" id="cards-pendentes">
+            <div class="kanban-empty">Nenhum pedido pendente</div>
+          </div>
+        </div>
+
+        <div class="kanban-col" id="col-preparando">
+          <div class="kanban-col-header prep-header">
+            <span>🟡</span> Preparando
+            <span class="col-count" id="cnt-preparando">0</span>
+          </div>
+          <div class="kanban-cards" id="cards-preparando">
+            <div class="kanban-empty">Nenhum pedido em preparo</div>
+          </div>
+        </div>
+
+        <div class="kanban-col" id="col-prontos">
+          <div class="kanban-col-header ready-header">
+            <span>🟢</span> Prontos
+            <span class="col-count" id="cnt-prontos">0</span>
+          </div>
+          <div class="kanban-cards" id="cards-prontos">
+            <div class="kanban-empty">Nenhum pedido pronto</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Toast de notificação -->
+    <div class="notif-toast" id="notif-toast">
+      <div class="toast-icon">🔔</div>
+      <div class="toast-content">
+        <strong id="toast-title">Novo Pedido!</strong>
+        <span id="toast-body">Mesa X — N itens</span>
+      </div>
+    </div>
+
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
