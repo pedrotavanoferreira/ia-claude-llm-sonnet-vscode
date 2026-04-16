@@ -19,50 +19,38 @@ O projeto implementa o padrão **Half Loop**, focado em micro-interações, feed
 ### Tela de Login
 > Tela inicial com seleção de perfil (Garçom ou Cozinheiro), fundo com orbs animados e overlay de ruído para textura visual.
 
-```
-📸 [Inserir print da tela de login aqui]
-     → Caminho sugerido: docs/screenshots/login.png
-```
 
-<!-- Exemplo de como adicionar o print:
+
+
 ![Tela de Login](docs/screenshots/login.png)
--->
+
 
 ---
 
 ### Tela do Garçom
 > Painel principal com seleção de mesas, cardápio por categorias e comanda em tempo real com cálculo automático de totais.
 
-```
-📸 [Inserir print da tela do garçom aqui]
-     → Caminho sugerido: docs/screenshots/garcom.png
-```
 
-<!-- ![Tela do Garçom](docs/screenshots/garcom.png) -->
+
+![Tela do Garçom](docs/screenshots/garcom.png)
 
 ---
 
 ### Tela da Cozinha (Kanban)
 > Painel Kanban com três colunas: **Pendentes → Preparando → Prontos**. Atualização automática a cada 2 segundos e notificações de novos pedidos.
 
-```
-📸 [Inserir print da tela da cozinha aqui]
-     → Caminho sugerido: docs/screenshots/cozinha.png
-```
 
-<!-- ![Tela da Cozinha](docs/screenshots/cozinha.png) -->
+
+![Tela da Cozinha](docs/screenshots/cozinha.png)
 
 ---
 
 ### Toast de Notificação
 > Notificação visual animada que aparece na cozinha ao receber um novo pedido, com dados do garçom, mesa e total.
 
-```
-📸 [Inserir print do toast de notificação aqui]
-     → Caminho sugerido: docs/screenshots/toast.png
-```
 
-<!-- ![Toast](docs/screenshots/toast.png) -->
+
+![Toast](docs/screenshots/toast.png)
 
 ---
 
