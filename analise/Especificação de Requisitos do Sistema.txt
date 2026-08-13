@@ -1,0 +1,6 @@
+Garçom deve conseguir:
+- Ver quando pedido está pronto para desocupar a mesa
+Requisito funcional:
+- Sistema deve permitir acesso ao admin com um perfil próprio, para conseguir adicionar ou remover o cardápio e a quantidade de estoque(Controle de estoque)
+- O sistema deve exibir um relatório com gráficos fáceis de visualizar todo o fluxo de estoque(com a conta do admin).
+- O sistema deve avisar quando um item estiver em falta no estoque.

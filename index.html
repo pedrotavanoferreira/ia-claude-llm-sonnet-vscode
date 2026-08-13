@@ -3,274 +3,907 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RestaurantOS — Sistema de Pedidos</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Monjolo Coffee Shop — Sistema de Pedidos</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ══════════════════════════════════════════════════════
+   Monjolo Coffee Shop — Stylesheet (self-contained)
+══════════════════════════════════════════════════════ */
+:root {
+  --bg-deep:#0a0a0f; --bg-card:#13131a; --bg-card2:#1a1a24;
+  --border:rgba(255,255,255,0.07);
+  --gold:#f5c842; --gold-light:#fde68a; --gold-dark:#c9960a;
+  --red-hot:#ff4444; --orange:#ff7c2a; --green-ok:#2ecc71;
+  --blue-cool:#4fc3f7; --purple:#a78bfa;
+  --text-primary:#f0ead6; --text-secondary:#9b9080; --text-muted:#555060;
+  --shadow-gold:0 0 40px rgba(245,200,66,0.15); --shadow-card:0 8px 32px rgba(0,0,0,0.5);
+  --radius-sm:8px; --radius-md:14px; --radius-lg:22px;
+  --transition:0.25s cubic-bezier(0.4,0,0.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.55;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg-deep)}
+::-webkit-scrollbar-thumb{background:var(--gold-dark);border-radius:99px}
+
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+
+/* ── LOGIN ── */
+#screen-login{align-items:center;justify-content:center;position:relative;overflow:hidden}
+.login-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,#1a0a2e 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,#1a0800 0%,transparent 60%),#0a0a0f}
+.login-orb{position:absolute;border-radius:50%;filter:blur(80px);animation:float 8s ease-in-out infinite}
+.orb1{width:500px;height:500px;background:rgba(245,200,66,.06);top:-10%;left:-10%}
+.orb2{width:350px;height:350px;background:rgba(255,68,68,.07);bottom:5%;right:-5%;animation-delay:-3s}
+.orb3{width:250px;height:250px;background:rgba(79,195,247,.05);top:40%;left:60%;animation-delay:-5s}
+@keyframes float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.05)}}
+.noise-overlay{position:absolute;inset:0;opacity:.4;pointer-events:none}
+.login-card{position:relative;z-index:2;background:var(--bg-card);border:1px solid var(--border);border-top-color:rgba(245,200,66,.2);border-radius:var(--radius-lg);padding:44px 40px 40px;width:440px;max-width:95vw;box-shadow:var(--shadow-card),var(--shadow-gold);animation:slideUp .6s both}
+@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+.login-logo{text-align:center;margin-bottom:32px}
+.logo-icon{font-size:48px;display:block;margin-bottom:10px;filter:drop-shadow(0 0 20px rgba(245,200,66,.4));animation:pulse-icon 3s ease-in-out infinite}
+@keyframes pulse-icon{0%,100%{filter:drop-shadow(0 0 20px rgba(245,200,66,.4))}50%{filter:drop-shadow(0 0 36px rgba(245,200,66,.7))}}
+.logo-text{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;color:var(--text-primary)}
+.logo-text span{color:var(--gold)}
+.logo-sub{font-size:12px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+.profile-selector{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:26px}
+.profile-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 8px;background:var(--bg-card2);border:2px solid var(--border);border-radius:var(--radius-md);cursor:pointer;transition:var(--transition);color:var(--text-secondary)}
+.profile-btn:hover{border-color:rgba(245,200,66,.4);color:var(--text-primary);transform:translateY(-2px)}
+.profile-btn.active{border-color:var(--gold);background:rgba(245,200,66,.07);color:var(--gold);box-shadow:0 0 20px rgba(245,200,66,.15)}
+.profile-icon{font-size:24px} .profile-label{font-size:12px;font-weight:600}
+.input-group{margin-bottom:18px;position:relative}
+.input-group label{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px}
+.input-group input{width:100%;padding:12px 16px;background:var(--bg-card2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:var(--transition)}
+.input-group input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,200,66,.1)}
+.input-group input::placeholder{color:var(--text-muted)}
+.password-hint{position:absolute;right:0;bottom:-20px;font-size:11px;color:var(--text-muted)}
+.password-hint strong{color:var(--gold)}
+.btn-login{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;margin-top:28px;background:linear-gradient(135deg,var(--gold-dark),var(--gold));border:none;border-radius:var(--radius-sm);color:#0a0a0f;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:var(--transition)}
+.btn-login:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(245,200,66,.4)}
+.login-error{text-align:center;color:var(--red-hot);font-size:13px;margin-top:12px;min-height:18px}
+
+/* ── SHARED HEADER ── */
+.garcom-header,.cozinha-header,.admin-header{display:flex;align-items:center;justify-content:space-between;padding:13px 24px;border-bottom:1px solid var(--border);background:rgba(10,10,15,.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;flex-shrink:0}
+.header-left{display:flex;align-items:center;gap:12px} .header-center{text-align:center} .header-right{display:flex;align-items:center;gap:12px}
+.header-center h2{font-family:'Playfair Display',serif;font-size:17px}
+.logo-sm{font-family:'Playfair Display',serif;font-weight:700;font-size:15px;color:var(--gold)}
+.coz-logo{color:var(--orange)} .admin-logo{color:var(--purple)}
+.header-badge{font-size:11px;font-weight:700;letter-spacing:1px;padding:4px 10px;border-radius:99px;text-transform:uppercase}
+.garcom-badge{background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.3);color:var(--gold)}
+.coz-badge{background:rgba(255,124,42,.12);border:1px solid rgba(255,124,42,.3);color:var(--orange)}
+.admin-badge{background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);color:var(--purple)}
+.order-counter,.notif-counter{font-family:'Space Mono',monospace;font-size:12px;color:var(--text-secondary);background:var(--bg-card2);padding:5px 12px;border-radius:99px;border:1px solid var(--border)}
+.order-counter span,.notif-counter span:first-child{color:var(--gold);font-weight:700}
+.btn-logout{padding:6px 14px;background:transparent;border:1.5px solid rgba(255,68,68,.3);border-radius:var(--radius-sm);color:var(--red-hot);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition)}
+.btn-logout:hover{background:rgba(255,68,68,.1)}
+
+/* ── GARÇOM ── */
+.garcom-layout{display:grid;grid-template-columns:350px 1fr;height:calc(100vh - 57px);overflow:hidden}
+.garcom-sidebar{background:var(--bg-card);border-right:1px solid var(--border);overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:16px}
+.garcom-main{overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:18px}
+.section-card{background:var(--bg-card2);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px}
+.section-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid var(--border)}
+.mesa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.mesa-btn{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-deep);border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);font-size:11px;font-weight:600;color:var(--text-secondary);gap:3px}
+.mesa-btn .mesa-num{font-family:'Space Mono',monospace;font-size:15px;color:var(--text-primary)}
+.mesa-btn:hover{border-color:var(--gold)}
+.mesa-btn.selected{border-color:var(--gold);background:rgba(245,200,66,.1)} .mesa-btn.selected .mesa-num{color:var(--gold)}
+.mesa-btn.ocupada{border-color:rgba(255,68,68,.4)} .mesa-btn.ocupada .mesa-num{color:var(--red-hot)}
+.category-tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.cat-tab{padding:4px 11px;background:var(--bg-deep);border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:var(--transition)}
+.cat-tab:hover{border-color:var(--gold);color:var(--gold-light)} .cat-tab.active{background:rgba(245,200,66,.12);border-color:var(--gold);color:var(--gold)}
+.menu-list{display:flex;flex-direction:column;gap:7px;max-height:280px;overflow-y:auto}
+.menu-item{display:flex;align-items:center;gap:10px;padding:9px 11px;background:var(--bg-deep);border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition)}
+.menu-item:hover{border-color:rgba(245,200,66,.4);transform:translateX(3px)}
+.menu-item.sem-estoque{opacity:.42;cursor:not-allowed} .menu-item.sem-estoque:hover{transform:none;border-color:var(--border)}
+.menu-item-emoji{font-size:22px;flex-shrink:0}
+.menu-item-info{flex:1}
+.menu-item-name{font-size:13px;font-weight:600} .menu-item-desc{font-size:11px;color:var(--text-muted);margin-top:1px}
+.menu-item-price{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--gold);white-space:nowrap}
+.menu-item-add{width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.3);border-radius:50%;font-size:17px;color:var(--gold);font-weight:700;flex-shrink:0;transition:var(--transition)}
+.menu-item:not(.sem-estoque):hover .menu-item-add{background:var(--gold);color:#0a0a0f}
+.estoque-tag{font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 6px;border-radius:99px;white-space:nowrap}
+.estoque-ok{background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.25);color:var(--green-ok)}
+.estoque-baixo{background:rgba(255,124,42,.1);border:1px solid rgba(255,124,42,.3);color:var(--orange)}
+.estoque-zero{background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.3);color:var(--red-hot)}
+.comanda-card{background:var(--bg-card);border:1px solid var(--border);border-top-color:rgba(245,200,66,.2);border-radius:var(--radius-md);overflow:hidden;flex:1}
+.comanda-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--bg-card2);border-bottom:1px solid var(--border)}
+.comanda-header h3{font-family:'Playfair Display',serif;font-size:17px;font-weight:700}
+.mesa-tag{font-family:'Space Mono',monospace;font-size:12px;padding:4px 11px;background:rgba(245,200,66,.08);border:1px solid rgba(245,200,66,.2);border-radius:99px;color:var(--gold)}
+.comanda-items{padding:14px 18px;min-height:160px;max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
+.comanda-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;height:150px;color:var(--text-muted);font-size:13px;text-align:center}
+.comanda-empty span{font-size:32px;opacity:.3}
+.comanda-row{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--bg-card2);border:1px solid var(--border);border-radius:var(--radius-sm);animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.comanda-row-emoji{font-size:19px} .comanda-row-name{flex:1;font-size:13px;font-weight:500}
+.qty-ctrl{display:flex;align-items:center;gap:5px}
+.qty-btn{width:22px;height:22px;border:1.5px solid var(--border);border-radius:50%;background:var(--bg-deep);color:var(--text-primary);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition);line-height:1}
+.qty-btn:hover{border-color:var(--gold);color:var(--gold)}
+.qty-num{font-family:'Space Mono',monospace;font-size:13px;min-width:18px;text-align:center;color:var(--gold)}
+.comanda-row-price{font-family:'Space Mono',monospace;font-size:12px;color:var(--text-secondary)}
+.btn-remove{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;transition:var(--transition);padding:2px 4px}
+.btn-remove:hover{color:var(--red-hot)}
+.comanda-footer{padding:14px 18px;border-top:1px solid var(--border)}
+.comanda-subtotais{margin-bottom:14px}
+.subtotal-row{display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);padding:4px 0}
+.subtotal-row.taxa{color:var(--text-muted);font-size:12px}
+.subtotal-row.total{font-size:15px;font-weight:700;color:var(--gold);margin-top:7px;padding-top:7px;border-top:1px solid var(--border)}
+.obs-group{margin-bottom:14px}
+.obs-group label{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
+.obs-group textarea{width:100%;padding:9px 13px;background:var(--bg-card2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical;min-height:64px;outline:none;transition:var(--transition)}
+.obs-group textarea:focus{border-color:var(--gold)}
+.obs-group textarea::placeholder{color:var(--text-muted)}
+.btn-fechar-pedido{width:100%;padding:14px;background:linear-gradient(135deg,#1a5c2a,var(--green-ok));border:none;border-radius:var(--radius-sm);color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:var(--transition)}
+.btn-fechar-pedido:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(46,204,113,.3)}
+.historico-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px}
+.historico-card h3{font-family:'Playfair Display',serif;font-size:16px;margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid var(--border)}
+.empty-hist{color:var(--text-muted);font-size:13px}
+#historico-list{display:flex;flex-direction:column;gap:9px;max-height:220px;overflow-y:auto}
+.hist-item{display:flex;align-items:flex-start;gap:10px;padding:10px 13px;background:var(--bg-card2);border:1px solid var(--border);border-left:3px solid var(--green-ok);border-radius:var(--radius-sm);animation:fadeIn .3s ease}
+.hist-badge{font-family:'Space Mono',monospace;font-size:11px;padding:3px 8px;background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.3);border-radius:99px;color:var(--green-ok);white-space:nowrap;flex-shrink:0}
+.hist-info{flex:1} .hist-title{font-size:13px;font-weight:600;margin-bottom:2px} .hist-details{font-size:11px;color:var(--text-muted)}
+.hist-time{font-family:'Space Mono',monospace;font-size:11px;color:var(--text-muted);white-space:nowrap}
+
+/* ── COZINHA ── */
+#screen-cozinha{position:relative;overflow:hidden}
+.cozinha-bg{position:fixed;inset:0;pointer-events:none;z-index:0}
+.cozinha-flame{position:absolute;bottom:-60px;border-radius:50% 50% 40% 40%;filter:blur(60px);animation:flicker 3s ease-in-out infinite}
+.f1{width:400px;height:300px;left:5%;background:rgba(255,60,0,.06)}
+.f2{width:300px;height:250px;left:45%;background:rgba(255,124,42,.05);animation-delay:-1s}
+.f3{width:350px;height:280px;right:3%;background:rgba(245,200,66,.04);animation-delay:-2s}
+@keyframes flicker{0%,100%{transform:scaleX(1) scaleY(1) translateY(0);opacity:1}33%{transform:scaleX(1.05) scaleY(.95) translateY(-10px);opacity:.8}66%{transform:scaleX(.97) scaleY(1.03) translateY(5px);opacity:.9}}
+.cozinha-header{background:rgba(10,5,0,.95);border-bottom-color:rgba(255,124,42,.2)}
+.live-dot{display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;color:var(--red-hot);margin-top:2px}
+.live-dot span{width:8px;height:8px;border-radius:50%;background:var(--red-hot);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.coz-logout{border-color:rgba(255,124,42,.3);color:var(--orange)} .coz-logout:hover{background:rgba(255,124,42,.1)}
+.cozinha-layout{position:relative;z-index:1;flex:1;overflow-y:auto;padding:22px 26px;display:flex;flex-direction:column;gap:22px}
+.cozinha-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px 16px 14px;position:relative;overflow:hidden;transition:var(--transition)}
+.stat-card:hover{transform:translateY(-2px)}
+.stat-num{display:block;font-family:'Playfair Display',serif;font-size:40px;font-weight:900;line-height:1;color:var(--text-primary)}
+.stat-label{display:block;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-top:5px}
+.stat-bar{position:absolute;bottom:0;left:0;right:0;height:3px}
+.pending-bar{background:linear-gradient(90deg,var(--red-hot),transparent)} .prep-bar{background:linear-gradient(90deg,var(--gold),transparent)}
+.ready-bar{background:linear-gradient(90deg,var(--green-ok),transparent)} .total-bar{background:linear-gradient(90deg,var(--blue-cool),transparent)}
+.kanban-board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;flex:1}
+.kanban-col{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;display:flex;flex-direction:column}
+.kanban-col-header{display:flex;align-items:center;gap:8px;padding:13px 16px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.pending-header{color:var(--red-hot);background:rgba(255,68,68,.06)} .prep-header{color:var(--gold);background:rgba(245,200,66,.06)} .ready-header{color:var(--green-ok);background:rgba(46,204,113,.06)}
+.col-count{margin-left:auto;background:var(--bg-deep);font-family:'Space Mono',monospace;font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid var(--border)}
+.kanban-cards{padding:12px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;flex:1}
+.kanban-empty{text-align:center;font-size:12px;color:var(--text-muted);padding:22px 0}
+.pedido-card{background:var(--bg-card2);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;animation:slideCard .35s both}
+@keyframes slideCard{from{opacity:0;transform:scale(.95) translateY(-8px)}to{opacity:1;transform:none}}
+.pedido-card-head{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--bg-deep);border-bottom:1px solid var(--border)}
+.pedido-mesa{font-family:'Space Mono',monospace;font-size:13px;font-weight:700} .pedido-time{font-family:'Space Mono',monospace;font-size:10px;color:var(--text-muted)}
+.pedido-garcom{font-size:11px;color:var(--text-muted);padding:0 13px 5px;margin-top:5px}
+.pedido-itens{padding:7px 13px;display:flex;flex-direction:column;gap:3px}
+.pedido-item-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-secondary);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.pedido-item-row:last-child{border:none}
+.pedido-item-qty{font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);min-width:22px}
+.pedido-obs{margin:6px 13px;padding:7px 9px;background:rgba(245,200,66,.05);border:1px solid rgba(245,200,66,.1);border-radius:6px;font-size:11px;color:var(--gold-light);font-style:italic}
+.pedido-total{padding:7px 13px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;border-top:1px solid var(--border);display:flex;justify-content:space-between}
+.pedido-actions{display:flex;border-top:1px solid var(--border)}
+.pedido-actions button{flex:1;padding:9px;border:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:var(--transition)}
+.btn-iniciar{background:rgba(245,200,66,.12);color:var(--gold);border-right:1px solid var(--border)!important} .btn-iniciar:hover{background:rgba(245,200,66,.22)}
+.btn-pronto{background:rgba(46,204,113,.1);color:var(--green-ok)} .btn-pronto:hover{background:rgba(46,204,113,.2)}
+.notif-toast{position:fixed;bottom:26px;right:26px;display:flex;align-items:center;gap:13px;padding:15px 20px;background:var(--bg-card);border:1.5px solid var(--gold);border-radius:var(--radius-md);box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 40px rgba(245,200,66,.2);z-index:9999;transform:translateX(160%);transition:transform .4s cubic-bezier(.4,0,.2,1);min-width:270px}
+.notif-toast.show{transform:translateX(0)}
+.toast-icon{font-size:26px;animation:ring .5s ease infinite alternate}
+@keyframes ring{from{transform:rotate(-15deg)}to{transform:rotate(15deg)}}
+.toast-content{display:flex;flex-direction:column;gap:2px}
+.toast-content strong{font-size:14px;color:var(--gold)} .toast-content span{font-size:12px;color:var(--text-secondary)}
+.new-order-pulse{animation:pulseCard .6s ease 3}
+@keyframes pulseCard{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 3px rgba(245,200,66,.4)}}
+
+/* ══════════════════════════════════════
+   ADMIN PANEL
+══════════════════════════════════════ */
+#screen-admin{overflow:hidden}
+.admin-header{background:rgba(5,5,15,.95);border-bottom-color:rgba(167,139,250,.2)}
+.admin-layout{flex:1;overflow:hidden;display:flex;height:calc(100vh - 57px)}
+.admin-nav{width:210px;flex-shrink:0;background:var(--bg-card);border-right:1px solid var(--border);padding:18px 10px;display:flex;flex-direction:column;gap:3px}
+.admin-nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 13px;background:transparent;border:none;border-radius:var(--radius-sm);color:var(--text-secondary);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:var(--transition);text-align:left}
+.admin-nav-btn:hover{background:rgba(167,139,250,.08);color:var(--text-primary)}
+.admin-nav-btn.active{background:rgba(167,139,250,.12);color:var(--purple);border-left:3px solid var(--purple)}
+.admin-nav-btn .nav-icon{font-size:17px;width:22px;text-align:center}
+.admin-nav-divider{height:1px;background:var(--border);margin:8px 0}
+.admin-content{flex:1;overflow-y:auto;padding:26px 30px;display:flex;flex-direction:column;gap:22px}
+.admin-page{display:none} .admin-page.active{display:flex;flex-direction:column;gap:22px}
+.admin-top-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.admin-page-title{font-family:'Playfair Display',serif;font-size:21px;font-weight:700}
+.btn-admin-add{display:flex;align-items:center;gap:7px;padding:9px 18px;background:linear-gradient(135deg,#4a2a8a,var(--purple));border:none;border-radius:var(--radius-sm);color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--transition)}
+.btn-admin-add:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(167,139,250,.3)}
+.alert-banner{display:flex;align-items:center;gap:11px;padding:11px 16px;background:rgba(255,68,68,.07);border:1px solid rgba(255,68,68,.28);border-radius:var(--radius-sm);font-size:13px;color:var(--red-hot);animation:fadeIn .3s ease}
+.alert-banner .alert-icon{font-size:19px;flex-shrink:0}
+.estoque-table-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
+.estoque-table{width:100%;border-collapse:collapse}
+.estoque-table th{padding:11px 14px;text-align:left;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);background:var(--bg-card2);border-bottom:1px solid var(--border)}
+.estoque-table td{padding:11px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.estoque-table tr:last-child td{border-bottom:none}
+.estoque-table tr:hover td{background:rgba(255,255,255,.02)}
+.td-nome{display:flex;align-items:center;gap:9px;font-weight:600}
+.td-cat{font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--border);color:var(--text-muted);white-space:nowrap}
+.td-preco{font-family:'Space Mono',monospace;font-size:12px;color:var(--gold)}
+.td-estoque{display:flex;align-items:center;gap:7px}
+.estoque-num{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;min-width:26px;text-align:center}
+.estoque-num.zero{color:var(--red-hot)} .estoque-num.baixo{color:var(--orange)} .estoque-num.ok{color:var(--green-ok)}
+.estoque-bar-wrap{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;min-width:55px}
+.estoque-bar{height:100%;border-radius:3px;transition:width .5s ease}
+.bar-ok{background:var(--green-ok)} .bar-baixo{background:var(--orange)} .bar-zero{background:var(--red-hot)}
+.td-actions{display:flex;gap:5px}
+.btn-estoque-adj{padding:5px 9px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--bg-card2);color:var(--text-primary);font-family:'Space Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;transition:var(--transition);line-height:1}
+.btn-estoque-adj:hover{border-color:var(--gold);color:var(--gold)}
+.btn-edit-item{padding:5px 10px;border-radius:var(--radius-sm);border:1.5px solid rgba(167,139,250,.3);background:rgba(167,139,250,.08);color:var(--purple);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:'DM Sans',sans-serif}
+.btn-edit-item:hover{background:rgba(167,139,250,.18)}
+.btn-del-item{padding:5px 10px;border-radius:var(--radius-sm);border:1.5px solid rgba(255,68,68,.22);background:rgba(255,68,68,.06);color:var(--red-hot);font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:'DM Sans',sans-serif}
+.btn-del-item:hover{background:rgba(255,68,68,.15)}
+.relatorio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.rel-stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px;position:relative;overflow:hidden}
+.rel-stat-num{font-family:'Playfair Display',serif;font-size:34px;font-weight:900}
+.rel-stat-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-top:4px}
+.rel-stat-sub{font-size:12px;color:var(--text-secondary);margin-top:5px}
+.rel-stat-bar{position:absolute;bottom:0;left:0;right:0;height:3px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px}
+.chart-card-full{grid-column:1/-1}
+.chart-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.chart-wrap{position:relative;height:230px} .chart-wrap-tall{height:280px}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);z-index:8000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--bg-card);border:1px solid var(--border);border-top-color:rgba(167,139,250,.3);border-radius:var(--radius-lg);padding:30px;width:460px;max-width:95vw;animation:slideUp .3s ease}
+.modal-title{font-family:'Playfair Display',serif;font-size:19px;font-weight:700;margin-bottom:22px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-grid .full{grid-column:1/-1}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted)}
+.form-group input,.form-group select{padding:10px 13px;background:var(--bg-card2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:var(--transition)}
+.form-group input:focus,.form-group select:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(167,139,250,.1)}
+.form-group select option{background:var(--bg-card2)}
+.modal-actions{display:flex;gap:9px;margin-top:22px;justify-content:flex-end}
+.btn-modal-cancel{padding:9px 18px;background:transparent;border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:var(--transition)}
+.btn-modal-cancel:hover{border-color:var(--text-secondary);color:var(--text-primary)}
+.btn-modal-save{padding:9px 22px;background:linear-gradient(135deg,#4a2a8a,var(--purple));border:none;border-radius:var(--radius-sm);color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:var(--transition)}
+.btn-modal-save:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(167,139,250,.3)}
+
+@media(max-width:900px){
+  .garcom-layout{grid-template-columns:1fr;height:auto;overflow:visible}
+  .cozinha-stats{grid-template-columns:repeat(2,1fr)} .kanban-board{grid-template-columns:1fr}
+  .mesa-grid{grid-template-columns:repeat(5,1fr)} .admin-layout{flex-direction:column}
+  .admin-nav{width:100%;flex-direction:row;flex-wrap:wrap;padding:8px}
+  .relatorio-grid{grid-template-columns:1fr 1fr} .charts-grid{grid-template-columns:1fr} .chart-card-full{grid-column:auto}
+}
+</style>
 </head>
 <body>
-  <p style="text-align:center; font-weight:bold; margin:10px 0;">
-    Made by: Pedro Tavano Ferreira
-  </p>
 
-  <!-- ══════════════════════════════════════
-       TELA DE LOGIN
-  ══════════════════════════════════════ -->
-  <section id="screen-login" class="screen active">
-    <div class="login-bg">
-      <div class="login-orb orb1"></div>
-      <div class="login-orb orb2"></div>
-      <div class="login-orb orb3"></div>
-      <div class="noise-overlay"></div>
+<p style="text-align:center;font-weight:bold;margin:10px 0;font-family:'DM Sans',sans-serif;font-size:12px;color:#555060">
+  Made by: Pedro Tavano Ferreira
+</p>
+
+<!-- ══════════ LOGIN ══════════ -->
+<section id="screen-login" class="screen active">
+  <div class="login-bg">
+    <div class="login-orb orb1"></div><div class="login-orb orb2"></div><div class="login-orb orb3"></div>
+    <div class="noise-overlay"></div>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="logo-icon">☕</span>
+      <h1 class="logo-text">Monjolo<span>Coffee Shop</span></h1>
+      <p class="logo-sub">Sistema Inteligente de Pedidos</p>
     </div>
-
-    <div class="login-card">
-      <div class="login-logo">
-        <span class="logo-icon">🍽</span>
-        <h1 class="logo-text">Monjolo<span>CoffeeShop</span></h1>
-        <p class="logo-sub">Sistema Inteligente de Pedidos</p>
+    <div class="login-form">
+      <div class="profile-selector">
+        <button class="profile-btn active" data-role="garcom" onclick="selectRole('garcom',this)"><span class="profile-icon">🛎</span><span class="profile-label">Garçom</span></button>
+        <button class="profile-btn" data-role="cozinheiro" onclick="selectRole('cozinheiro',this)"><span class="profile-icon">👨‍🍳</span><span class="profile-label">Cozinheiro</span></button>
+        <button class="profile-btn" data-role="admin" onclick="selectRole('admin',this)"><span class="profile-icon">🔐</span><span class="profile-label">Admin</span></button>
       </div>
-
-      <div class="login-form">
-        <div class="profile-selector">
-          <button class="profile-btn active" data-role="garcom" onclick="selectRole('garcom', this)">
-            <span class="profile-icon">🛎</span>
-            <span class="profile-label">Garçom</span>
-          </button>
-          <button class="profile-btn" data-role="cozinheiro" onclick="selectRole('cozinheiro', this)">
-            <span class="profile-icon">👨‍🍳</span>
-            <span class="profile-label">Cozinheiro</span>
-          </button>
-        </div>
-
-        <div class="input-group">
-          <label>Usuário</label>
-          <input type="text" id="login-user" placeholder="Digite seu nome…" autocomplete="off" />
-        </div>
-
-        <div class="input-group">
-          <label>Senha</label>
-          <input type="password" id="login-pass" placeholder="••••••••" />
-          <span class="password-hint" id="pass-hint">Dica: <strong>1234</strong></span>
-        </div>
-
-        <button class="btn-login" onclick="doLogin()">
-          <span>Entrar</span>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-
-        <p class="login-error" id="login-error"></p>
+      <div class="input-group">
+        <label>Usuário</label>
+        <input type="text" id="login-user" placeholder="Digite seu usuário…" autocomplete="off"/>
       </div>
+      <div class="input-group">
+        <label>Senha</label>
+        <input type="password" id="login-pass" placeholder="••••••••"/>
+        <span class="password-hint" id="pass-hint">Dica: <strong>1234</strong></span>
+      </div>
+      <button class="btn-login" onclick="doLogin()">
+        <span>Entrar</span>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+      <p class="login-error" id="login-error"></p>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ══════════════════════════════════════
-       TELA DO GARÇOM — FAZER PEDIDO
-  ══════════════════════════════════════ -->
-  <section id="screen-garcom" class="screen">
-
-    <!-- Header -->
-    <header class="garcom-header">
-      <div class="header-left">
-        <span class="logo-sm">🍽 RestaurantOS</span>
-        <span class="header-badge garcom-badge">🛎 Garçom</span>
+<!-- ══════════ GARÇOM ══════════ -->
+<section id="screen-garcom" class="screen">
+  <header class="garcom-header">
+    <div class="header-left"><span class="logo-sm">☕ Monjolo</span><span class="header-badge garcom-badge">🛎 Garçom</span></div>
+    <div class="header-center"><h2 id="garcom-welcome">Olá!</h2></div>
+    <div class="header-right">
+      <div class="order-counter"><span id="order-count-badge">0</span> pedidos hoje</div>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </header>
+  <div class="garcom-layout">
+    <aside class="garcom-sidebar">
+      <div class="section-card"><h3 class="section-title"><span>🪑</span> Mesa</h3><div class="mesa-grid" id="mesa-grid"></div></div>
+      <div class="section-card">
+        <h3 class="section-title"><span>📋</span> Cardápio</h3>
+        <div class="category-tabs" id="category-tabs"></div>
+        <div class="menu-list" id="menu-list"></div>
       </div>
-      <div class="header-center">
-        <h2 id="garcom-welcome">Olá, Garçom!</h2>
+    </aside>
+    <main class="garcom-main">
+      <div class="comanda-card">
+        <div class="comanda-header"><h3>🧾 Comanda</h3><span class="mesa-tag" id="comanda-mesa-tag">Nenhuma mesa</span></div>
+        <div class="comanda-items" id="comanda-items"><div class="comanda-empty"><span>🍴</span><p>Selecione uma mesa e<br/>adicione itens ao pedido</p></div></div>
+        <div class="comanda-footer" id="comanda-footer" style="display:none">
+          <div class="comanda-subtotais">
+            <div class="subtotal-row"><span>Subtotal</span><span id="subtotal-val">R$ 0,00</span></div>
+            <div class="subtotal-row taxa"><span>Taxa de serviço (10%)</span><span id="taxa-val">R$ 0,00</span></div>
+            <div class="subtotal-row total"><span>Total</span><span id="total-val">R$ 0,00</span></div>
+          </div>
+          <div class="obs-group"><label>Observações</label><textarea id="obs-pedido" placeholder="Sem açúcar, bem quente…"></textarea></div>
+          <button class="btn-fechar-pedido" id="btn-fechar" onclick="fecharPedido()"><span>✅ Fechar Pedido &amp; Enviar à Cozinha</span></button>
+        </div>
       </div>
-      <div class="header-right">
-        <div class="order-counter">
-          <span id="order-count-badge">0</span> pedidos hoje
+      <div class="historico-card"><h3>📜 Pedidos Enviados</h3><div id="historico-list"><p class="empty-hist">Nenhum pedido enviado ainda.</p></div></div>
+    </main>
+  </div>
+</section>
+
+<!-- ══════════ COZINHA ══════════ -->
+<section id="screen-cozinha" class="screen">
+  <div class="cozinha-bg"><div class="cozinha-flame f1"></div><div class="cozinha-flame f2"></div><div class="cozinha-flame f3"></div></div>
+  <header class="cozinha-header">
+    <div class="header-left"><span class="logo-sm coz-logo">☕ Monjolo</span><span class="header-badge coz-badge">👨‍🍳 Cozinha</span></div>
+    <div class="header-center"><h2 id="coz-welcome">Cozinha — Pedidos ao Vivo</h2><div class="live-dot"><span></span> AO VIVO</div></div>
+    <div class="header-right"><div class="notif-counter"><span id="notif-count">0</span> <span>pedidos</span></div><button class="btn-logout coz-logout" onclick="doLogout()">Sair</button></div>
+  </header>
+  <div class="cozinha-layout">
+    <div class="cozinha-stats">
+      <div class="stat-card"><span class="stat-num" id="stat-pendentes">0</span><span class="stat-label">Pendentes</span><div class="stat-bar pending-bar"></div></div>
+      <div class="stat-card"><span class="stat-num" id="stat-preparando">0</span><span class="stat-label">Preparando</span><div class="stat-bar prep-bar"></div></div>
+      <div class="stat-card"><span class="stat-num" id="stat-prontos">0</span><span class="stat-label">Prontos</span><div class="stat-bar ready-bar"></div></div>
+      <div class="stat-card"><span class="stat-num" id="stat-total-coz">0</span><span class="stat-label">Total hoje</span><div class="stat-bar total-bar"></div></div>
+    </div>
+    <div class="kanban-board">
+      <div class="kanban-col"><div class="kanban-col-header pending-header"><span>🔴</span> Pendentes<span class="col-count" id="cnt-pendentes">0</span></div><div class="kanban-cards" id="cards-pendentes"><div class="kanban-empty">Nenhum pedido pendente</div></div></div>
+      <div class="kanban-col"><div class="kanban-col-header prep-header"><span>🟡</span> Preparando<span class="col-count" id="cnt-preparando">0</span></div><div class="kanban-cards" id="cards-preparando"><div class="kanban-empty">Nenhum pedido em preparo</div></div></div>
+      <div class="kanban-col"><div class="kanban-col-header ready-header"><span>🟢</span> Prontos<span class="col-count" id="cnt-prontos">0</span></div><div class="kanban-cards" id="cards-prontos"><div class="kanban-empty">Nenhum pedido pronto</div></div></div>
+    </div>
+  </div>
+  <div class="notif-toast" id="notif-toast"><div class="toast-icon">🔔</div><div class="toast-content"><strong id="toast-title">Novo Pedido!</strong><span id="toast-body">Mesa X</span></div></div>
+</section>
+
+<!-- ══════════ ADMIN ══════════ -->
+<section id="screen-admin" class="screen">
+  <header class="admin-header">
+    <div class="header-left"><span class="logo-sm admin-logo">☕ Monjolo</span><span class="header-badge admin-badge">🔐 Admin</span></div>
+    <div class="header-center"><h2 id="admin-welcome">Painel Administrativo</h2></div>
+    <div class="header-right"><button class="btn-logout" onclick="doLogout()">Sair</button></div>
+  </header>
+  <div class="admin-layout">
+    <nav class="admin-nav">
+      <button class="admin-nav-btn active" onclick="showAdminPage('estoque',this)"><span class="nav-icon">📦</span> Estoque & Cardápio</button>
+      <button class="admin-nav-btn" onclick="showAdminPage('relatorio',this)"><span class="nav-icon">📊</span> Relatórios</button>
+      <div class="admin-nav-divider"></div>
+      <button class="admin-nav-btn" onclick="doLogout()"><span class="nav-icon">🚪</span> Sair</button>
+    </nav>
+    <div class="admin-content">
+
+      <!-- PÁGINA ESTOQUE -->
+      <div class="admin-page active" id="page-estoque">
+        <div class="admin-top-bar">
+          <h2 class="admin-page-title">📦 Controle de Estoque &amp; Cardápio</h2>
+          <button class="btn-admin-add" onclick="abrirModalItem(null)">＋ Novo Item</button>
         </div>
-        <button class="btn-logout" onclick="doLogout()">Sair</button>
+        <div id="alertas-estoque"></div>
+        <div class="estoque-table-wrap">
+          <table class="estoque-table">
+            <thead><tr><th>Item</th><th>Categoria</th><th>Preço</th><th>Estoque</th><th>Ajustar</th><th>Ações</th></tr></thead>
+            <tbody id="estoque-tbody"></tbody>
+          </table>
+        </div>
       </div>
-    </header>
 
-    <div class="garcom-layout">
-
-      <!-- Painel Esquerdo: Seleção de Mesa + Cardápio -->
-      <aside class="garcom-sidebar">
-
-        <div class="section-card">
-          <h3 class="section-title">
-            <span>🪑</span> Mesa
-          </h3>
-          <div class="mesa-grid" id="mesa-grid">
-            <!-- gerado pelo JS -->
-          </div>
+      <!-- PÁGINA RELATÓRIO -->
+      <div class="admin-page" id="page-relatorio">
+        <h2 class="admin-page-title">📊 Relatório de Estoque &amp; Vendas</h2>
+        <div class="relatorio-grid" id="relatorio-kpis"></div>
+        <div class="charts-grid">
+          <div class="chart-card"><div class="chart-title">🏆 Itens Mais Vendidos</div><div class="chart-wrap"><canvas id="chart-vendidos"></canvas></div></div>
+          <div class="chart-card"><div class="chart-title">📦 Nível de Estoque por Item</div><div class="chart-wrap"><canvas id="chart-estoque"></canvas></div></div>
+          <div class="chart-card chart-card-full"><div class="chart-title">💰 Receita por Categoria</div><div class="chart-wrap chart-wrap-tall"><canvas id="chart-receita"></canvas></div></div>
         </div>
-
-        <div class="section-card">
-          <h3 class="section-title">
-            <span>📋</span> Cardápio
-          </h3>
-          <div class="category-tabs" id="category-tabs">
-            <!-- gerado pelo JS -->
-          </div>
-          <div class="menu-list" id="menu-list">
-            <!-- gerado pelo JS -->
-          </div>
-        </div>
-
-      </aside>
-
-      <!-- Painel Direito: Comanda -->
-      <main class="garcom-main">
-        <div class="comanda-card">
-          <div class="comanda-header">
-            <h3>🧾 Comanda</h3>
-            <span class="mesa-tag" id="comanda-mesa-tag">Nenhuma mesa</span>
-          </div>
-
-          <div class="comanda-items" id="comanda-items">
-            <div class="comanda-empty">
-              <span>🍴</span>
-              <p>Selecione uma mesa e<br/>adicione itens ao pedido</p>
-            </div>
-          </div>
-
-          <div class="comanda-footer" id="comanda-footer" style="display:none">
-            <div class="comanda-subtotais">
-              <div class="subtotal-row">
-                <span>Subtotal</span>
-                <span id="subtotal-val">R$ 0,00</span>
-              </div>
-              <div class="subtotal-row taxa">
-                <span>Taxa de serviço (10%)</span>
-                <span id="taxa-val">R$ 0,00</span>
-              </div>
-              <div class="subtotal-row total">
-                <span>Total</span>
-                <span id="total-val">R$ 0,00</span>
-              </div>
-            </div>
-
-            <div class="obs-group">
-              <label>Observações</label>
-              <textarea id="obs-pedido" placeholder="Sem cebola, bem passado…"></textarea>
-            </div>
-
-            <button class="btn-fechar-pedido" id="btn-fechar" onclick="fecharPedido()">
-              <span>✅ Fechar Pedido &amp; Enviar à Cozinha</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Histórico de pedidos do garçom -->
-        <div class="historico-card">
-          <h3>📜 Pedidos Enviados</h3>
-          <div id="historico-list">
-            <p class="empty-hist">Nenhum pedido enviado ainda.</p>
-          </div>
-        </div>
-      </main>
+      </div>
 
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ══════════════════════════════════════
-       TELA DOS COZINHEIROS — PAINEL
-  ══════════════════════════════════════ -->
-  <section id="screen-cozinha" class="screen">
-
-    <!-- Fundo especial da cozinha -->
-    <div class="cozinha-bg">
-      <div class="cozinha-flame f1"></div>
-      <div class="cozinha-flame f2"></div>
-      <div class="cozinha-flame f3"></div>
+<!-- ══════════ MODAL ══════════ -->
+<div class="modal-overlay" id="modal-item">
+  <div class="modal-box">
+    <h3 class="modal-title" id="modal-title">Novo Item</h3>
+    <div class="modal-grid">
+      <div class="form-group full"><label>Nome do Item</label><input type="text" id="fi-nome" placeholder="Ex: Cappuccino"/></div>
+      <div class="form-group full"><label>Descrição</label><input type="text" id="fi-desc" placeholder="Ex: Com leite vaporizado e canela"/></div>
+      <div class="form-group"><label>Categoria</label>
+        <select id="fi-cat"><option>Entradas</option><option>Principais</option><option>Bebidas</option><option>Sobremesas</option></select>
+      </div>
+      <div class="form-group"><label>Emoji</label><input type="text" id="fi-emoji" placeholder="☕" maxlength="4"/></div>
+      <div class="form-group"><label>Preço (R$)</label><input type="number" id="fi-preco" placeholder="0.00" step="0.01" min="0"/></div>
+      <div class="form-group"><label>Estoque inicial</label><input type="number" id="fi-estoque" placeholder="10" min="0"/></div>
     </div>
-
-    <header class="cozinha-header">
-      <div class="header-left">
-        <span class="logo-sm coz-logo">🍽 RestaurantOS</span>
-        <span class="header-badge coz-badge">👨‍🍳 Cozinha</span>
-      </div>
-      <div class="header-center">
-        <h2 id="coz-welcome">Cozinha — Pedidos ao Vivo</h2>
-        <div class="live-dot"><span></span> AO VIVO</div>
-      </div>
-      <div class="header-right">
-        <div class="notif-counter">
-          <span id="notif-count">0</span>
-          <span>pedidos</span>
-        </div>
-        <button class="btn-logout coz-logout" onclick="doLogout()">Sair</button>
-      </div>
-    </header>
-
-    <div class="cozinha-layout">
-
-      <!-- Stats rápidas -->
-      <div class="cozinha-stats">
-        <div class="stat-card">
-          <span class="stat-num" id="stat-pendentes">0</span>
-          <span class="stat-label">Pendentes</span>
-          <div class="stat-bar pending-bar"></div>
-        </div>
-        <div class="stat-card">
-          <span class="stat-num" id="stat-preparando">0</span>
-          <span class="stat-label">Preparando</span>
-          <div class="stat-bar prep-bar"></div>
-        </div>
-        <div class="stat-card">
-          <span class="stat-num" id="stat-prontos">0</span>
-          <span class="stat-label">Prontos</span>
-          <div class="stat-bar ready-bar"></div>
-        </div>
-        <div class="stat-card">
-          <span class="stat-num" id="stat-total-coz">0</span>
-          <span class="stat-label">Total hoje</span>
-          <div class="stat-bar total-bar"></div>
-        </div>
-      </div>
-
-      <!-- Painel Kanban de pedidos -->
-      <div class="kanban-board">
-
-        <div class="kanban-col" id="col-pendentes">
-          <div class="kanban-col-header pending-header">
-            <span>🔴</span> Pendentes
-            <span class="col-count" id="cnt-pendentes">0</span>
-          </div>
-          <div class="kanban-cards" id="cards-pendentes">
-            <div class="kanban-empty">Nenhum pedido pendente</div>
-          </div>
-        </div>
-
-        <div class="kanban-col" id="col-preparando">
-          <div class="kanban-col-header prep-header">
-            <span>🟡</span> Preparando
-            <span class="col-count" id="cnt-preparando">0</span>
-          </div>
-          <div class="kanban-cards" id="cards-preparando">
-            <div class="kanban-empty">Nenhum pedido em preparo</div>
-          </div>
-        </div>
-
-        <div class="kanban-col" id="col-prontos">
-          <div class="kanban-col-header ready-header">
-            <span>🟢</span> Prontos
-            <span class="col-count" id="cnt-prontos">0</span>
-          </div>
-          <div class="kanban-cards" id="cards-prontos">
-            <div class="kanban-empty">Nenhum pedido pronto</div>
-          </div>
-        </div>
-
-      </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-modal-save" onclick="salvarItem()">Salvar Item</button>
     </div>
+  </div>
+</div>
 
-    <!-- Toast de notificação -->
-    <div class="notif-toast" id="notif-toast">
-      <div class="toast-icon">🔔</div>
-      <div class="toast-content">
-        <strong id="toast-title">Novo Pedido!</strong>
-        <span id="toast-body">Mesa X — N itens</span>
-      </div>
-    </div>
+<script>
+'use strict';
 
-  </section>
+const USERS = {
+  garcom:     [{user:'mario',pass:'1234',nome:'Mario'},{user:'joao',pass:'1234',nome:'João'}],
+  cozinheiro: [{user:'chef',pass:'1234',nome:'Chef Carlos'},{user:'lucas',pass:'1234',nome:'Lucas'}],
+  admin:      [{user:'admin',pass:'1234',nome:'Administrador'},{user:'pedro',pass:'1234',nome:'Pedro'}],
+};
 
-  <script src="app.js"></script>
+const SEED = [
+  {id:1, cat:'Entradas',  emoji:'🥗',nome:'Salada Caesar',       desc:'Alface, croutons, parmesão',        preco:28.90,estoque:15},
+  {id:2, cat:'Entradas',  emoji:'🦐',nome:'Camarão ao ajillo',   desc:'Com pão e azeite',                  preco:52.00,estoque:8},
+  {id:3, cat:'Entradas',  emoji:'🧀',nome:'Tábua de frios',      desc:'Queijos e embutidos selecionados',  preco:68.00,estoque:5},
+  {id:4, cat:'Principais',emoji:'🥩',nome:'Picanha grelhada',    desc:'300g com arroz e fritas',           preco:94.90,estoque:10},
+  {id:5, cat:'Principais',emoji:'🍝',nome:'Fettuccine Carbonara',desc:'Bacon, ovo, parmesão',              preco:58.00,estoque:12},
+  {id:6, cat:'Principais',emoji:'🐟',nome:'Salmão ao molho',     desc:'Com legumes grelhados',             preco:82.00,estoque:0},
+  {id:7, cat:'Principais',emoji:'🍗',nome:'Frango parmegiana',   desc:'Molho de tomate e muçarela',        preco:62.00,estoque:2},
+  {id:8, cat:'Bebidas',   emoji:'☕',nome:'Cappuccino',           desc:'Com leite vaporizado e canela',     preco:18.00,estoque:50},
+  {id:9, cat:'Bebidas',   emoji:'🍵',nome:'Chá Premium',          desc:'Diversas opções de ervas',          preco:14.00,estoque:40},
+  {id:10,cat:'Bebidas',   emoji:'🥤',nome:'Suco natural',         desc:'Laranja, limão ou abacaxi',         preco:16.00,estoque:20},
+  {id:11,cat:'Bebidas',   emoji:'🫗',nome:'Água mineral',         desc:'Com ou sem gás 500ml',              preco: 7.50,estoque:60},
+  {id:12,cat:'Sobremesas',emoji:'🍰',nome:'Cheesecake de frutas', desc:'Com calda de morango',              preco:26.00,estoque:6},
+  {id:13,cat:'Sobremesas',emoji:'🍮',nome:'Pudim de leite',       desc:'Clássico com calda de caramelo',   preco:20.00,estoque:4},
+  {id:14,cat:'Sobremesas',emoji:'🍫',nome:'Petit gâteau',         desc:'Com sorvete de baunilha',           preco:34.00,estoque:0},
+];
+
+const ESTOQUE_BAIXO = 3;
+const LS_PEDIDOS  = 'mcs_pedidos';
+const LS_CARDAPIO = 'mcs_cardapio';
+const LS_VENDIDOS = 'mcs_vendidos';
+
+let currentUser  = null, selectedRole = 'garcom', selectedMesa = null;
+let comanda = [], catAtiva = 'Bebidas', orderCount = 0, editingId = null;
+let chartV = null, chartE = null, chartR = null;
+
+// ── Storage helpers ──
+function getCardapio(){try{const r=localStorage.getItem(LS_CARDAPIO);return r?JSON.parse(r):JSON.parse(JSON.stringify(SEED));}catch{return JSON.parse(JSON.stringify(SEED));}}
+function saveCardapio(a){localStorage.setItem(LS_CARDAPIO,JSON.stringify(a));}
+function getPedidos(){try{return JSON.parse(localStorage.getItem(LS_PEDIDOS))||[];}catch{return[];}}
+function savePedidos(a){localStorage.setItem(LS_PEDIDOS,JSON.stringify(a));}
+function getVendidos(){try{return JSON.parse(localStorage.getItem(LS_VENDIDOS))||{};}catch{return{};}}
+function saveVendidos(o){localStorage.setItem(LS_VENDIDOS,JSON.stringify(o));}
+function nextId(){const c=getCardapio();return c.length?Math.max(...c.map(i=>i.id))+1:1;}
+
+if(!localStorage.getItem(LS_CARDAPIO)) saveCardapio(JSON.parse(JSON.stringify(SEED)));
+
+// ══════════════════════════ LOGIN ══════════════════════════
+function selectRole(role,btn){
+  selectedRole=role;
+  document.querySelectorAll('.profile-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const hint=(USERS[role]||[{user:'admin'}])[0].user;
+  document.getElementById('pass-hint').innerHTML=`Dica: <strong>1234</strong> (usuário: ${hint})`;
+}
+
+function doLogin(){
+  const u=document.getElementById('login-user').value.trim().toLowerCase();
+  const p=document.getElementById('login-pass').value.trim();
+  const err=document.getElementById('login-error');
+  err.textContent='';
+  if(!u||!p){err.textContent='Preencha usuário e senha.';return;}
+  const match=(USERS[selectedRole]||[]).find(x=>x.user===u&&x.pass===p);
+  if(!match){err.textContent='❌ Usuário ou senha incorretos.';return;}
+  currentUser={role:selectedRole,nome:match.nome,user:match.user};
+  if(selectedRole==='garcom'){showScreen('garcom');initGarcom();}
+  else if(selectedRole==='cozinheiro'){showScreen('cozinha');initCozinha();}
+  else{showScreen('admin');initAdmin();}
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  ['login-user','login-pass'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();}));
+  document.getElementById('pass-hint').innerHTML=`Dica: <strong>1234</strong> (usuário: ${USERS['garcom'][0].user})`;
+});
+
+function doLogout(){
+  currentUser=null;selectedMesa=null;comanda=[];
+  stopCozinhaPolling();destroyCharts();
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-error').textContent='';
+  showScreen('login');
+}
+
+function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');}
+
+// ══════════════════════════ GARÇOM ══════════════════════════
+function initGarcom(){
+  document.getElementById('garcom-welcome').textContent=`Olá, ${currentUser.nome}! 👋`;
+  orderCount=0;updateOrderBadge();
+  buildMesaGrid();buildCategoryTabs();renderMenu();renderComanda();renderHistorico();
+}
+
+function buildMesaGrid(){
+  const grid=document.getElementById('mesa-grid');grid.innerHTML='';
+  const ocupadas=new Set(getPedidos().filter(p=>p.status!=='pronto').map(p=>p.mesa));
+  for(let i=1;i<=12;i++){
+    const btn=document.createElement('button');
+    btn.className='mesa-btn'+(ocupadas.has(i)?' ocupada':'')+(selectedMesa===i?' selected':'');
+    btn.onclick=()=>selectMesa(i);
+    btn.innerHTML=`<span class="mesa-num">${i}</span><span>${ocupadas.has(i)?'ocupada':'livre'}</span>`;
+    grid.appendChild(btn);
+  }
+}
+
+function selectMesa(num){selectedMesa=num;comanda=[];buildMesaGrid();document.getElementById('comanda-mesa-tag').textContent=`Mesa ${num}`;renderComanda();}
+
+function buildCategoryTabs(){
+  const tabs=document.getElementById('category-tabs');tabs.innerHTML='';
+  const cats=[...new Set(getCardapio().map(i=>i.cat))];
+  if(!cats.includes(catAtiva)) catAtiva=cats[0]||'Bebidas';
+  cats.forEach(cat=>{
+    const btn=document.createElement('button');
+    btn.className='cat-tab'+(cat===catAtiva?' active':'');
+    btn.textContent=cat;
+    btn.onclick=()=>{catAtiva=cat;buildCategoryTabs();renderMenu();};
+    tabs.appendChild(btn);
+  });
+}
+
+function renderMenu(){
+  const list=document.getElementById('menu-list');list.innerHTML='';
+  getCardapio().filter(i=>i.cat===catAtiva).forEach(item=>{
+    const semEstoque=item.estoque<=0;
+    const baixo=item.estoque>0&&item.estoque<=ESTOQUE_BAIXO;
+    const el=document.createElement('div');
+    el.className='menu-item'+(semEstoque?' sem-estoque':'');
+    el.onclick=()=>{if(!semEstoque)addToComanda(item);};
+    const tagClass=semEstoque?'estoque-zero':(baixo?'estoque-baixo':'estoque-ok');
+    const tagTxt=semEstoque?'⛔ Esgotado':(baixo?`⚠️ Só ${item.estoque}`:`✓ ${item.estoque}`);
+    el.innerHTML=`
+      <span class="menu-item-emoji">${item.emoji}</span>
+      <div class="menu-item-info"><div class="menu-item-name">${item.nome}</div><div class="menu-item-desc">${item.desc}</div></div>
+      <span class="estoque-tag ${tagClass}">${tagTxt}</span>
+      <span class="menu-item-price">R$ ${item.preco.toFixed(2)}</span>
+      <div class="menu-item-add">${semEstoque?'✕':'+'}</div>`;
+    list.appendChild(el);
+  });
+}
+
+function addToComanda(item){
+  if(!selectedMesa){flashError('Selecione uma mesa primeiro!');return;}
+  const ficha=getCardapio().find(c=>c.id===item.id);
+  const qtdCart=(comanda.find(c=>c.item.id===item.id)?.qty)||0;
+  if(ficha&&qtdCart>=ficha.estoque){flashError(`Estoque insuficiente (${ficha.estoque} un.)`);return;}
+  const ex=comanda.find(c=>c.item.id===item.id);
+  if(ex)ex.qty++;else comanda.push({item,qty:1});
+  renderComanda();
+}
+
+function changeQty(id,delta){
+  const idx=comanda.findIndex(c=>c.item.id===id);if(idx===-1)return;
+  if(delta>0){const f=getCardapio().find(c=>c.id===id);if(f&&comanda[idx].qty>=f.estoque){flashError(`Estoque insuficiente (${f.estoque} un.)`);return;}}
+  comanda[idx].qty+=delta;
+  if(comanda[idx].qty<=0)comanda.splice(idx,1);
+  renderComanda();
+}
+
+function removeItem(id){comanda=comanda.filter(c=>c.item.id!==id);renderComanda();}
+
+function renderComanda(){
+  const con=document.getElementById('comanda-items');
+  const footer=document.getElementById('comanda-footer');
+  if(!comanda.length){con.innerHTML=`<div class="comanda-empty"><span>🍴</span><p>Selecione uma mesa e<br/>adicione itens ao pedido</p></div>`;footer.style.display='none';return;}
+  con.innerHTML='';
+  comanda.forEach(({item,qty})=>{
+    const row=document.createElement('div');row.className='comanda-row';
+    row.innerHTML=`<span class="comanda-row-emoji">${item.emoji}</span><span class="comanda-row-name">${item.nome}</span>
+      <div class="qty-ctrl"><button class="qty-btn" onclick="changeQty(${item.id},-1)">−</button><span class="qty-num">${qty}</span><button class="qty-btn" onclick="changeQty(${item.id},1)">+</button></div>
+      <span class="comanda-row-price">R$ ${(item.preco*qty).toFixed(2)}</span><button class="btn-remove" onclick="removeItem(${item.id})">✕</button>`;
+    con.appendChild(row);
+  });
+  const sub=comanda.reduce((s,c)=>s+c.item.preco*c.qty,0);
+  const taxa=sub*0.1;const total=sub+taxa;
+  document.getElementById('subtotal-val').textContent=`R$ ${sub.toFixed(2)}`;
+  document.getElementById('taxa-val').textContent=`R$ ${taxa.toFixed(2)}`;
+  document.getElementById('total-val').textContent=`R$ ${total.toFixed(2)}`;
+  footer.style.display='block';
+}
+
+function fecharPedido(){
+  if(!selectedMesa){flashError('Selecione uma mesa!');return;}
+  if(!comanda.length){flashError('Adicione itens ao pedido!');return;}
+  const obs=document.getElementById('obs-pedido').value.trim();
+  const sub=comanda.reduce((s,c)=>s+c.item.preco*c.qty,0);
+  const total=sub*1.1;
+  const cardapio=getCardapio();const vendidos=getVendidos();
+  comanda.forEach(({item,qty})=>{
+    const idx=cardapio.findIndex(c=>c.id===item.id);
+    if(idx!==-1)cardapio[idx].estoque=Math.max(0,cardapio[idx].estoque-qty);
+    vendidos[item.id]=(vendidos[item.id]||0)+qty;
+  });
+  saveCardapio(cardapio);saveVendidos(vendidos);
+  const pedido={id:Date.now(),mesa:selectedMesa,garcom:currentUser.nome,
+    itens:comanda.map(c=>({emoji:c.item.emoji,nome:c.item.nome,qty:c.qty,preco:c.item.preco,cat:c.item.cat})),
+    obs,total,status:'pendente',hora:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),ts:Date.now()};
+  const pedidos=getPedidos();pedidos.unshift(pedido);savePedidos(pedidos);
+  window.dispatchEvent(new StorageEvent('storage',{key:LS_PEDIDOS,newValue:JSON.stringify(pedidos)}));
+  orderCount++;updateOrderBadge();addToHistorico(pedido);
+  const mf=selectedMesa;selectedMesa=null;comanda=[];
+  document.getElementById('obs-pedido').value='';
+  document.getElementById('comanda-mesa-tag').textContent='Nenhuma mesa';
+  buildMesaGrid();renderComanda();showSuccessFlash(mf);
+}
+
+function addToHistorico(p){
+  const list=document.getElementById('historico-list');list.querySelector('.empty-hist')?.remove();
+  const el=document.createElement('div');el.className='hist-item';
+  el.innerHTML=`<span class="hist-badge">Mesa ${p.mesa}</span>
+    <div class="hist-info"><div class="hist-title">${p.itens.length} iten${p.itens.length>1?'s':'m'} — R$ ${p.total.toFixed(2)}</div>
+    <div class="hist-details">${p.itens.map(i=>`${i.qty}x ${i.nome}`).join(', ')}</div></div>
+    <span class="hist-time">${p.hora}</span>`;
+  list.prepend(el);
+}
+
+function renderHistorico(){document.getElementById('historico-list').innerHTML='<p class="empty-hist">Nenhum pedido enviado ainda.</p>';}
+function updateOrderBadge(){document.getElementById('order-count-badge').textContent=orderCount;}
+
+function flashError(msg){
+  const btn=document.getElementById('btn-fechar');const orig=btn.innerHTML;
+  btn.innerHTML=`<span>⚠️ ${msg}</span>`;btn.style.background='linear-gradient(135deg,#7a0000,#c0392b)';
+  setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';},2200);
+}
+function showSuccessFlash(mesa){
+  const btn=document.getElementById('btn-fechar');const orig=btn.innerHTML;
+  btn.innerHTML=`<span>🚀 Pedido Mesa ${mesa} enviado à cozinha!</span>`;btn.style.background='linear-gradient(135deg,#0a4020,var(--green-ok))';
+  setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';},2500);
+}
+
+// ══════════════════════════ COZINHA ══════════════════════════
+let cozinhaInterval=null,lastSeenTs=0;
+
+function initCozinha(){
+  document.getElementById('coz-welcome').textContent=`Cozinha — ${currentUser.nome}`;
+  if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();
+  const p=getPedidos();lastSeenTs=p.length?p[0].ts:0;
+  renderKanban();startCozinhaPolling();
+}
+function startCozinhaPolling(){cozinhaInterval=setInterval(renderKanban,2000);window.addEventListener('storage',onStorageChange);}
+function stopCozinhaPolling(){clearInterval(cozinhaInterval);window.removeEventListener('storage',onStorageChange);}
+function onStorageChange(e){if(e.key===LS_PEDIDOS)renderKanban();}
+
+function renderKanban(){
+  const pedidos=getPedidos();
+  const pen=pedidos.filter(p=>p.status==='pendente');
+  const pre=pedidos.filter(p=>p.status==='preparando');
+  const pro=pedidos.filter(p=>p.status==='pronto');
+  document.getElementById('stat-pendentes').textContent=pen.length;
+  document.getElementById('stat-preparando').textContent=pre.length;
+  document.getElementById('stat-prontos').textContent=pro.length;
+  document.getElementById('stat-total-coz').textContent=pedidos.length;
+  document.getElementById('notif-count').textContent=pedidos.length;
+  document.getElementById('cnt-pendentes').textContent=pen.length;
+  document.getElementById('cnt-preparando').textContent=pre.length;
+  document.getElementById('cnt-prontos').textContent=pro.length;
+  if(pedidos.length){const n=pedidos[0];if(n.ts>lastSeenTs&&lastSeenTs!==0){showToast(n);notifyBrowser(n);}lastSeenTs=Math.max(lastSeenTs,n.ts);}
+  renderColuna('cards-pendentes',pen,['btn-iniciar','btn-pronto'],['🟡 Iniciar preparo','🟢 Pronto']);
+  renderColuna('cards-preparando',pre,['btn-pronto'],['🟢 Marcar como pronto']);
+  renderColuna('cards-prontos',pro,[],[]);
+}
+
+function renderColuna(id,pedidos,btnCls,btnLbl){
+  const c=document.getElementById(id);c.innerHTML='';
+  if(!pedidos.length){c.innerHTML='<div class="kanban-empty">Nenhum pedido aqui</div>';return;}
+  pedidos.forEach(p=>{
+    const card=document.createElement('div');card.className='pedido-card';card.id=`card-${p.id}`;
+    let act='';
+    if(btnCls.length===2)act=`<div class="pedido-actions"><button class="${btnCls[0]}" onclick="moverPedido(${p.id},'preparando')">${btnLbl[0]}</button><button class="${btnCls[1]}" onclick="moverPedido(${p.id},'pronto')">${btnLbl[1]}</button></div>`;
+    else if(btnCls.length===1)act=`<div class="pedido-actions"><button class="${btnCls[0]}" onclick="moverPedido(${p.id},'pronto')">${btnLbl[0]}</button></div>`;
+    card.innerHTML=`<div class="pedido-card-head"><span class="pedido-mesa">🪑 Mesa ${p.mesa}</span><span class="pedido-time">${p.hora}</span></div>
+      <div class="pedido-garcom">🛎 Garçom: <strong>${p.garcom}</strong></div>
+      <div class="pedido-itens">${p.itens.map(i=>`<div class="pedido-item-row"><span class="pedido-item-qty">${i.qty}x</span><span>${i.emoji} ${i.nome}</span></div>`).join('')}</div>
+      ${p.obs?`<div class="pedido-obs">📝 ${p.obs}</div>`:''}
+      <div class="pedido-total"><span>Total</span><span>R$ ${p.total.toFixed(2)}</span></div>${act}`;
+    c.appendChild(card);
+  });
+}
+
+function moverPedido(id,status){
+  const pedidos=getPedidos();const idx=pedidos.findIndex(p=>p.id===id);if(idx===-1)return;
+  pedidos[idx].status=status;savePedidos(pedidos);renderKanban();
+  document.getElementById(`card-${id}`)?.classList.add('new-order-pulse');
+}
+
+function showToast(p){
+  const t=document.getElementById('notif-toast');
+  document.getElementById('toast-title').textContent=`🔔 Novo Pedido — Mesa ${p.mesa}`;
+  document.getElementById('toast-body').textContent=`${p.itens.length} item(ns) • ${p.garcom} • R$ ${p.total.toFixed(2)}`;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),5000);
+}
+function notifyBrowser(p){
+  if(!('Notification'in window))return;
+  if(Notification.permission==='granted')new Notification(`🔔 Novo Pedido — Mesa ${p.mesa}`,{body:p.itens.map(i=>`${i.qty}x ${i.nome}`).join(', ')});
+  else if(Notification.permission!=='denied')Notification.requestPermission().then(perm=>{if(perm==='granted')notifyBrowser(p);});
+}
+
+// ══════════════════════════ ADMIN ══════════════════════════
+function initAdmin(){
+  document.getElementById('admin-welcome').textContent=`Bem-vindo, ${currentUser.nome}`;
+  showAdminPage('estoque',document.querySelector('.admin-nav-btn'));
+}
+
+function showAdminPage(page,btn){
+  document.querySelectorAll('.admin-page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.admin-nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(page==='estoque')renderEstoque();
+  if(page==='relatorio')renderRelatorio();
+}
+
+// ── Estoque ──
+function renderEstoque(){
+  const cardapio=getCardapio();
+  const tbody=document.getElementById('estoque-tbody');tbody.innerHTML='';
+  const alertBox=document.getElementById('alertas-estoque');alertBox.innerHTML='';
+  const zerados=cardapio.filter(i=>i.estoque<=0);
+  const baixos=cardapio.filter(i=>i.estoque>0&&i.estoque<=ESTOQUE_BAIXO);
+  if(zerados.length){
+    const div=document.createElement('div');div.className='alert-banner';
+    div.innerHTML=`<span class="alert-icon">⛔</span><span><strong>Itens esgotados:</strong> ${zerados.map(i=>`${i.emoji} ${i.nome}`).join(', ')}</span>`;
+    alertBox.appendChild(div);
+  }
+  if(baixos.length){
+    const div=document.createElement('div');div.className='alert-banner';
+    div.style.cssText='border-color:rgba(255,124,42,.35);background:rgba(255,124,42,.07);color:var(--orange)';
+    div.innerHTML=`<span class="alert-icon">⚠️</span><span><strong>Estoque baixo (≤${ESTOQUE_BAIXO}):</strong> ${baixos.map(i=>`${i.emoji} ${i.nome} (${i.estoque})`).join(', ')}</span>`;
+    alertBox.appendChild(div);
+  }
+  const MAX=60;
+  cardapio.forEach(item=>{
+    const pct=Math.min(100,(item.estoque/MAX)*100);
+    const cls=item.estoque<=0?'zero':(item.estoque<=ESTOQUE_BAIXO?'baixo':'ok');
+    const barC=item.estoque<=0?'bar-zero':(item.estoque<=ESTOQUE_BAIXO?'bar-baixo':'bar-ok');
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><div class="td-nome"><span>${item.emoji}</span>${item.nome}</div></td>
+      <td><span class="td-cat">${item.cat}</span></td>
+      <td><span class="td-preco">R$ ${item.preco.toFixed(2)}</span></td>
+      <td><div class="td-estoque"><span class="estoque-num ${cls}">${item.estoque}</span><div class="estoque-bar-wrap"><div class="estoque-bar ${barC}" style="width:${pct}%"></div></div></div></td>
+      <td><div class="td-actions">
+        <button class="btn-estoque-adj" onclick="ajustarEstoque(${item.id},-1)">−</button>
+        <button class="btn-estoque-adj" onclick="ajustarEstoque(${item.id},1)">+</button>
+        <button class="btn-estoque-adj" onclick="ajustarEstoque(${item.id},10)" style="font-size:11px;color:var(--green-ok);border-color:rgba(46,204,113,.3)">+10</button>
+      </div></td>
+      <td><div class="td-actions">
+        <button class="btn-edit-item" onclick="abrirModalItem(${item.id})">✏️ Editar</button>
+        <button class="btn-del-item" onclick="deletarItem(${item.id})">🗑 Remover</button>
+      </div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function ajustarEstoque(id,delta){
+  const c=getCardapio();const idx=c.findIndex(i=>i.id===id);if(idx===-1)return;
+  c[idx].estoque=Math.max(0,c[idx].estoque+delta);saveCardapio(c);renderEstoque();
+}
+
+function deletarItem(id){
+  if(!confirm('Remover este item do cardápio?'))return;
+  saveCardapio(getCardapio().filter(i=>i.id!==id));renderEstoque();
+}
+
+// ── Modal ──
+function abrirModalItem(id){
+  editingId=id;
+  const modal=document.getElementById('modal-item');
+  if(id!==null){
+    const item=getCardapio().find(i=>i.id===id);if(!item)return;
+    document.getElementById('modal-title').textContent='Editar Item';
+    document.getElementById('fi-nome').value=item.nome;
+    document.getElementById('fi-desc').value=item.desc;
+    document.getElementById('fi-cat').value=item.cat;
+    document.getElementById('fi-emoji').value=item.emoji;
+    document.getElementById('fi-preco').value=item.preco;
+    document.getElementById('fi-estoque').value=item.estoque;
+  }else{
+    document.getElementById('modal-title').textContent='Novo Item';
+    ['fi-nome','fi-desc','fi-emoji','fi-preco','fi-estoque'].forEach(fid=>document.getElementById(fid).value='');
+    document.getElementById('fi-cat').value='Bebidas';
+  }
+  modal.classList.add('open');
+}
+
+function fecharModal(){document.getElementById('modal-item').classList.remove('open');editingId=null;}
+
+function salvarItem(){
+  const nome=document.getElementById('fi-nome').value.trim();
+  const desc=document.getElementById('fi-desc').value.trim();
+  const cat=document.getElementById('fi-cat').value;
+  const emoji=document.getElementById('fi-emoji').value.trim()||'🍽';
+  const preco=parseFloat(document.getElementById('fi-preco').value);
+  const estoque=parseInt(document.getElementById('fi-estoque').value,10);
+  if(!nome||isNaN(preco)||isNaN(estoque)||preco<0||estoque<0){alert('Preencha todos os campos corretamente.');return;}
+  const c=getCardapio();
+  if(editingId!==null){const idx=c.findIndex(i=>i.id===editingId);if(idx!==-1)Object.assign(c[idx],{nome,desc,cat,emoji,preco,estoque});}
+  else c.push({id:nextId(),cat,emoji,nome,desc,preco,estoque});
+  saveCardapio(c);fecharModal();renderEstoque();
+}
+
+document.getElementById('modal-item').addEventListener('click',function(e){if(e.target===this)fecharModal();});
+
+// ── Relatório / Gráficos ──
+function destroyCharts(){[chartV,chartE,chartR].forEach(c=>{if(c)c.destroy();});chartV=chartE=chartR=null;}
+
+function renderRelatorio(){
+  destroyCharts();
+  const cardapio=getCardapio();
+  const pedidos=getPedidos();
+  const vendidos=getVendidos();
+  const totalReceita=pedidos.reduce((s,p)=>s+p.total,0);
+  const totalItens=Object.values(vendidos).reduce((s,v)=>s+v,0);
+  const criticos=cardapio.filter(i=>i.estoque<=ESTOQUE_BAIXO).length;
+  document.getElementById('relatorio-kpis').innerHTML=`
+    <div class="rel-stat-card"><div class="rel-stat-num">R$ ${totalReceita.toFixed(2)}</div><div class="rel-stat-label">Receita Total</div><div class="rel-stat-sub">${pedidos.length} pedidos</div><div class="rel-stat-bar" style="background:linear-gradient(90deg,var(--gold),transparent)"></div></div>
+    <div class="rel-stat-card"><div class="rel-stat-num">${totalItens}</div><div class="rel-stat-label">Itens Vendidos</div><div class="rel-stat-sub">${cardapio.length} itens no cardápio</div><div class="rel-stat-bar" style="background:linear-gradient(90deg,var(--blue-cool),transparent)"></div></div>
+    <div class="rel-stat-card"><div class="rel-stat-num" style="color:${criticos>0?'var(--red-hot)':'var(--green-ok)'}">${criticos}</div><div class="rel-stat-label">Itens Críticos</div><div class="rel-stat-sub">Estoque ≤ ${ESTOQUE_BAIXO} unidades</div><div class="rel-stat-bar" style="background:linear-gradient(90deg,var(--red-hot),transparent)"></div></div>`;
+
+  const chartBase={
+    scales:{
+      x:{ticks:{color:'#555060'},grid:{color:'rgba(255,255,255,0.05)'}},
+      y:{ticks:{color:'#555060'},grid:{color:'rgba(255,255,255,0.05)'},beginAtZero:true}
+    },
+    plugins:{legend:{labels:{color:'#9b9080',font:{family:"'DM Sans'"}}}}
+  };
+
+  // Chart 1 — Mais vendidos
+  const vendArr=cardapio.map(i=>({nome:`${i.emoji} ${i.nome}`,qty:vendidos[i.id]||0})).sort((a,b)=>b.qty-a.qty).slice(0,8);
+  chartV=new Chart(document.getElementById('chart-vendidos'),{
+    type:'bar',
+    data:{labels:vendArr.map(i=>i.nome),datasets:[{label:'Qtd vendida',data:vendArr.map(i=>i.qty),backgroundColor:'rgba(245,200,66,0.5)',borderColor:'rgba(245,200,66,0.9)',borderWidth:1.5,borderRadius:5}]},
+    options:{...chartBase,indexAxis:'y',plugins:{...chartBase.plugins,legend:{display:false}}}
+  });
+
+  // Chart 2 — Estoque por item
+  const estArr=[...cardapio].sort((a,b)=>a.estoque-b.estoque).slice(0,10);
+  const esCores=estArr.map(i=>i.estoque<=0?'rgba(255,68,68,0.65)':i.estoque<=ESTOQUE_BAIXO?'rgba(255,124,42,0.65)':'rgba(46,204,113,0.55)');
+  chartE=new Chart(document.getElementById('chart-estoque'),{
+    type:'bar',
+    data:{labels:estArr.map(i=>`${i.emoji} ${i.nome.split(' ')[0]}`),datasets:[{label:'Estoque',data:estArr.map(i=>i.estoque),backgroundColor:esCores,borderColor:esCores,borderWidth:1.5,borderRadius:5}]},
+    options:{...chartBase,plugins:{...chartBase.plugins,legend:{display:false}}}
+  });
+
+  // Chart 3 — Receita por categoria
+  const cats=[...new Set(cardapio.map(i=>i.cat))];
+  const recCat=cats.map(cat=>pedidos.reduce((sum,p)=>sum+p.itens.filter(i=>i.cat===cat).reduce((s,i)=>s+i.preco*i.qty,0),0));
+  const catColors=['rgba(245,200,66,0.7)','rgba(255,124,42,0.7)','rgba(79,195,247,0.7)','rgba(167,139,250,0.7)'];
+  chartR=new Chart(document.getElementById('chart-receita'),{
+    type:'bar',
+    data:{labels:cats,datasets:[{label:'Receita (R$)',data:recCat,backgroundColor:catColors,borderColor:catColors.map(c=>c.replace('0.7','1')),borderWidth:2,borderRadius:8}]},
+    options:{...chartBase,plugins:{...chartBase.plugins,legend:{display:false},tooltip:{callbacks:{label:ctx=>` R$ ${ctx.parsed.y.toFixed(2)}`}}}}
+  });
+}
+</script>
 </body>
 </html>
