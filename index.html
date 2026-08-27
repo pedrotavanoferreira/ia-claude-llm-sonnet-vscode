@@ -218,6 +218,8 @@ body{background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',s
 .admin-page-title{font-family:'Playfair Display',serif;font-size:21px;font-weight:700}
 .btn-admin-add{display:flex;align-items:center;gap:7px;padding:9px 18px;background:linear-gradient(135deg,#4a2a8a,var(--purple));border:none;border-radius:var(--radius-sm);color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--transition)}
 .btn-admin-add:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(167,139,250,.3)}
+.btn-csv{display:flex;align-items:center;gap:7px;padding:9px 18px;background:transparent;border:1.5px solid rgba(46,204,113,.4);border-radius:var(--radius-sm);color:var(--green-ok);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--transition)}
+.btn-csv:hover{background:rgba(46,204,113,.1);border-color:var(--green-ok);transform:translateY(-2px);box-shadow:0 6px 20px rgba(46,204,113,.2)}
 .alert-banner{display:flex;align-items:center;gap:11px;padding:11px 16px;background:rgba(255,68,68,.07);border:1px solid rgba(255,68,68,.28);border-radius:var(--radius-sm);font-size:13px;color:var(--red-hot);animation:fadeIn .3s ease}
 .alert-banner .alert-icon{font-size:19px;flex-shrink:0}
 .estoque-table-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
@@ -405,7 +407,10 @@ body{background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',s
       <div class="admin-page active" id="page-estoque">
         <div class="admin-top-bar">
           <h2 class="admin-page-title">📦 Controle de Estoque &amp; Cardápio</h2>
-          <button class="btn-admin-add" onclick="abrirModalItem(null)">＋ Novo Item</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-csv" onclick="downloadCSV()">⬇ Exportar CSV</button>
+            <button class="btn-admin-add" onclick="abrirModalItem(null)">＋ Novo Item</button>
+          </div>
         </div>
         <div id="alertas-estoque"></div>
         <div class="estoque-table-wrap">
@@ -812,6 +817,59 @@ function ajustarEstoque(id,delta){
 function deletarItem(id){
   if(!confirm('Remover este item do cardápio?'))return;
   saveCardapio(getCardapio().filter(i=>i.id!==id));renderEstoque();
+}
+
+function downloadCSV(){
+  const cardapio=getCardapio();
+  const vendidos=getVendidos();
+  const agora=new Date().toLocaleString('pt-BR');
+
+  // Cabeçalho
+  const cols=['ID','Nome','Categoria','Emoji','Preço (R$)','Estoque Atual','Qtd Vendida','Status','Última Atualização'];
+
+  // Linhas
+  const rows=cardapio.map(item=>{
+    const qtdVendida=vendidos[item.id]||0;
+    const status=item.estoque<=0?'ESGOTADO':item.estoque<=3?'ESTOQUE BAIXO':'OK';
+    return [
+      item.id,
+      `"${item.nome}"`,
+      `"${item.cat}"`,
+      item.emoji,
+      item.preco.toFixed(2),
+      item.estoque,
+      qtdVendida,
+      status,
+      `"${agora}"`
+    ].join(',');
+  });
+
+  // Rodapé de totais
+  const totalEstoque=cardapio.reduce((s,i)=>s+i.estoque,0);
+  const totalVendidos=Object.values(vendidos).reduce((s,v)=>s+v,0);
+  const totalReceita=cardapio.reduce((s,i)=>s+(i.preco*(vendidos[i.id]||0)),0);
+  rows.push(''); // linha em branco
+  rows.push(`"TOTAIS","","","","",${totalEstoque},${totalVendidos},"",""`);
+  rows.push(`"Receita estimada (sem taxa)","","","","R$",${totalReceita.toFixed(2)},"","",""`);
+
+  const csv=['\uFEFF'+cols.join(','),...rows].join('\r\n'); // BOM para Excel reconhecer UTF-8
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const dataHora=new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');
+  a.href=url;
+  a.download=`estoque_monjolo_${dataHora}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // Feedback visual no botão
+  const btn=document.querySelector('.btn-csv');
+  const orig=btn.innerHTML;
+  btn.innerHTML='✅ Baixando…';
+  btn.style.background='rgba(46,204,113,.15)';
+  setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';},2000);
 }
 
 // ── Modal ──
