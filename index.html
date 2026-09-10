@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ══════════════════════════════════════════════════════
    Monjolo Coffee Shop — Stylesheet (self-contained)
@@ -220,6 +221,8 @@ body{background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',s
 .btn-admin-add:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(167,139,250,.3)}
 .btn-csv{display:flex;align-items:center;gap:7px;padding:9px 18px;background:transparent;border:1.5px solid rgba(46,204,113,.4);border-radius:var(--radius-sm);color:var(--green-ok);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--transition)}
 .btn-csv:hover{background:rgba(46,204,113,.1);border-color:var(--green-ok);transform:translateY(-2px);box-shadow:0 6px 20px rgba(46,204,113,.2)}
+.btn-xlsx{display:flex;align-items:center;gap:7px;padding:9px 18px;background:transparent;border:1.5px solid rgba(33,150,83,.55);border-radius:var(--radius-sm);color:#4ade80;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--transition)}
+.btn-xlsx:hover{background:rgba(33,150,83,.12);border-color:#4ade80;transform:translateY(-2px);box-shadow:0 6px 20px rgba(33,150,83,.25)}
 .alert-banner{display:flex;align-items:center;gap:11px;padding:11px 16px;background:rgba(255,68,68,.07);border:1px solid rgba(255,68,68,.28);border-radius:var(--radius-sm);font-size:13px;color:var(--red-hot);animation:fadeIn .3s ease}
 .alert-banner .alert-icon{font-size:19px;flex-shrink:0}
 .estoque-table-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
@@ -408,7 +411,8 @@ body{background:var(--bg-deep);color:var(--text-primary);font-family:'DM Sans',s
         <div class="admin-top-bar">
           <h2 class="admin-page-title">📦 Controle de Estoque &amp; Cardápio</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn-csv" onclick="downloadCSV()">⬇ Exportar CSV</button>
+            <button class="btn-csv" onclick="downloadCSV()">⬇ CSV</button>
+            <button class="btn-xlsx" onclick="downloadXLSX()">⬇ Excel (.xlsx)</button>
             <button class="btn-admin-add" onclick="abrirModalItem(null)">＋ Novo Item</button>
           </div>
         </div>
@@ -819,57 +823,175 @@ function deletarItem(id){
   saveCardapio(getCardapio().filter(i=>i.id!==id));renderEstoque();
 }
 
-function downloadCSV(){
+// ── Dados compartilhados para exportação ──────────────
+function buildExportRows(){
   const cardapio=getCardapio();
   const vendidos=getVendidos();
   const agora=new Date().toLocaleString('pt-BR');
-
-  // Cabeçalho
-  const cols=['ID','Nome','Categoria','Emoji','Preço (R$)','Estoque Atual','Qtd Vendida','Status','Última Atualização'];
-
-  // Linhas
-  const rows=cardapio.map(item=>{
-    const qtdVendida=vendidos[item.id]||0;
-    const status=item.estoque<=0?'ESGOTADO':item.estoque<=3?'ESTOQUE BAIXO':'OK';
-    return [
-      item.id,
-      `"${item.nome}"`,
-      `"${item.cat}"`,
-      item.emoji,
-      item.preco.toFixed(2),
-      item.estoque,
-      qtdVendida,
-      status,
-      `"${agora}"`
-    ].join(',');
-  });
-
-  // Rodapé de totais
+  const rows=cardapio.map(item=>({
+    ID:          item.id,
+    Nome:        item.nome,
+    Categoria:   item.cat,
+    Emoji:       item.emoji,
+    'Preço (R$)':item.preco,
+    'Estoque Atual':item.estoque,
+    'Qtd Vendida':vendidos[item.id]||0,
+    Status:      item.estoque<=0?'ESGOTADO':item.estoque<=ESTOQUE_BAIXO?'ESTOQUE BAIXO':'OK',
+    'Última Atualização':agora,
+  }));
   const totalEstoque=cardapio.reduce((s,i)=>s+i.estoque,0);
   const totalVendidos=Object.values(vendidos).reduce((s,v)=>s+v,0);
   const totalReceita=cardapio.reduce((s,i)=>s+(i.preco*(vendidos[i.id]||0)),0);
-  rows.push(''); // linha em branco
-  rows.push(`"TOTAIS","","","","",${totalEstoque},${totalVendidos},"",""`);
-  rows.push(`"Receita estimada (sem taxa)","","","","R$",${totalReceita.toFixed(2)},"","",""`);
+  return {rows,totalEstoque,totalVendidos,totalReceita};
+}
 
-  const csv=['\uFEFF'+cols.join(','),...rows].join('\r\n'); // BOM para Excel reconhecer UTF-8
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+function btnFeedback(sel,msg,bg){
+  const btn=document.querySelector(sel);
+  const orig=btn.innerHTML;
+  btn.innerHTML=msg;btn.style.background=bg;
+  setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';},2200);
+}
+
+function filenameStamp(ext){
+  return `estoque_monjolo_${new Date().toISOString().slice(0,16).replace('T','_').replace(':','-')}.${ext}`;
+}
+
+// ── CSV ───────────────────────────────────────────────
+function downloadCSV(){
+  const {rows,totalEstoque,totalVendidos,totalReceita}=buildExportRows();
+  const cols=Object.keys(rows[0]);
+  const lines=[cols.join(',')];
+  rows.forEach(r=>lines.push(cols.map(c=>{
+    const v=r[c];
+    return typeof v==='string'?`"${v.replace(/"/g,'""')}"`:v;
+  }).join(',')));
+  lines.push('');
+  lines.push(`"TOTAIS","","","","",${totalEstoque},${totalVendidos},"",""`);
+  lines.push(`"Receita estimada (sem taxa)","","","","R$ ${totalReceita.toFixed(2)}","","","",""`);
+  const blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  const dataHora=new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');
-  a.href=url;
-  a.download=`estoque_monjolo_${dataHora}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  a.href=url;a.download=filenameStamp('csv');
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  btnFeedback('.btn-csv','✅ Baixando…','rgba(46,204,113,.15)');
+}
 
-  // Feedback visual no botão
-  const btn=document.querySelector('.btn-csv');
-  const orig=btn.innerHTML;
-  btn.innerHTML='✅ Baixando…';
-  btn.style.background='rgba(46,204,113,.15)';
-  setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';},2000);
+// ── XLSX (Excel nativo) ───────────────────────────────
+function downloadXLSX(){
+  const {rows,totalEstoque,totalVendidos,totalReceita}=buildExportRows();
+  const wb=XLSX.utils.book_new();
+
+  /* ── Aba 1: Estoque completo ── */
+  const wsData=[
+    // Título
+    ['MONJOLO COFFEE SHOP — Controle de Estoque'],
+    [`Gerado em: ${new Date().toLocaleString('pt-BR')}`],
+    [], // linha em branco
+    // Cabeçalhos
+    ['ID','Nome','Categoria','Emoji','Preço (R$)','Estoque Atual','Qtd Vendida','Status','Receita Gerada (R$)'],
+  ];
+
+  rows.forEach(r=>{
+    wsData.push([
+      r.ID, r.Nome, r.Categoria, r.Emoji,
+      r['Preço (R$)'],
+      r['Estoque Atual'],
+      r['Qtd Vendida'],
+      r.Status,
+      parseFloat((r['Preço (R$)']*(r['Qtd Vendida'])).toFixed(2)),
+    ]);
+  });
+
+  // Linha em branco + totais
+  wsData.push([]);
+  wsData.push(['TOTAIS','','','','',totalEstoque,totalVendidos,'',parseFloat(totalReceita.toFixed(2))]);
+
+  const ws=XLSX.utils.aoa_to_sheet(wsData);
+
+  // Larguras das colunas
+  ws['!cols']=[
+    {wch:6},{wch:28},{wch:14},{wch:6},{wch:12},
+    {wch:14},{wch:13},{wch:16},{wch:18},
+  ];
+
+  // Mescla o título nas colunas A–I (linha 1)
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:8}}];
+
+  // Estilos via SheetJS (requer sheetjs-style, mas usamos a versão gratuita —
+  // aplicamos via xml inline para garantir compatibilidade)
+  // Cabeçalho na linha 4 (index 3) — negrito + fundo
+  const headerRow=4; // 1-based
+  ['A','B','C','D','E','F','G','H','I'].forEach(col=>{
+    const cell=ws[`${col}${headerRow}`];
+    if(cell){
+      cell.s={
+        font:{bold:true,color:{rgb:'FFFFFFFF'}},
+        fill:{fgColor:{rgb:'FF4A2A8A'}},
+        alignment:{horizontal:'center'},
+      };
+    }
+  });
+
+  // Linha de totais
+  const totRow=wsData.length;
+  ['A','B','C','D','E','F','G','H','I'].forEach(col=>{
+    const cell=ws[`${col}${totRow}`];
+    if(cell) cell.s={font:{bold:true},fill:{fgColor:{rgb:'FF1A1A24'}}};
+  });
+
+  // Colorir coluna Status por valor
+  rows.forEach((r,i)=>{
+    const rowIdx=headerRow+1+i; // 1-based
+    const cell=ws[`H${rowIdx}`];
+    if(!cell)return;
+    const cor=r.Status==='ESGOTADO'?'FFFF4444':r.Status==='ESTOQUE BAIXO'?'FFFF7C2A':'FF2ECC71';
+    cell.s={font:{bold:true,color:{rgb:cor}}};
+  });
+
+  // Formato monetário nas colunas E e I
+  rows.forEach((_,i)=>{
+    const rowIdx=headerRow+1+i;
+    ['E','I'].forEach(col=>{
+      const cell=ws[`${col}${rowIdx}`];
+      if(cell) cell.z='"R$"#,##0.00';
+    });
+  });
+
+  XLSX.utils.book_append_sheet(wb,ws,'Estoque');
+
+  /* ── Aba 2: Resumo por Categoria ── */
+  const cardapio=getCardapio();
+  const vendidos=getVendidos();
+  const cats=[...new Set(cardapio.map(i=>i.cat))];
+  const resumoData=[
+    ['Categoria','Itens no Cardápio','Estoque Total','Qtd Vendida','Receita (R$)','Itens Críticos'],
+  ];
+  cats.forEach(cat=>{
+    const itens=cardapio.filter(i=>i.cat===cat);
+    const estoqueTotal=itens.reduce((s,i)=>s+i.estoque,0);
+    const vendidosTotal=itens.reduce((s,i)=>s+(vendidos[i.id]||0),0);
+    const receita=itens.reduce((s,i)=>s+(i.preco*(vendidos[i.id]||0)),0);
+    const criticos=itens.filter(i=>i.estoque<=ESTOQUE_BAIXO).length;
+    resumoData.push([cat,itens.length,estoqueTotal,vendidosTotal,parseFloat(receita.toFixed(2)),criticos]);
+  });
+  const wsRes=XLSX.utils.aoa_to_sheet(resumoData);
+  wsRes['!cols']=[{wch:16},{wch:18},{wch:15},{wch:13},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,wsRes,'Resumo por Categoria');
+
+  /* ── Aba 3: Alertas ── */
+  const alertasData=[['⚠️ ALERTAS DE ESTOQUE'],[''],['Item','Categoria','Estoque Atual','Status']];
+  cardapio.filter(i=>i.estoque<=ESTOQUE_BAIXO).forEach(i=>{
+    alertasData.push([i.nome,i.cat,i.estoque,i.estoque<=0?'ESGOTADO':'ESTOQUE BAIXO']);
+  });
+  if(alertasData.length===4) alertasData.push(['Nenhum item crítico no momento','','','']);
+  const wsAlert=XLSX.utils.aoa_to_sheet(alertasData);
+  wsAlert['!cols']=[{wch:28},{wch:14},{wch:14},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,wsAlert,'Alertas');
+
+  // Gerar e baixar
+  XLSX.writeFile(wb,filenameStamp('xlsx'));
+  btnFeedback('.btn-xlsx','✅ Baixando…','rgba(33,150,83,.15)');
 }
 
 // ── Modal ──
